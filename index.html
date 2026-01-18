@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Press & Profit: Illustrated Edition</title>
+  <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root {
+      --ink: #2c241b;
+      --wood: #5d4037;
+    }
+    body {
+      font-family: 'Georgia', serif;
+      background-color: #1a1a1a;
+      color: var(--ink);
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden; /* Prevent body scroll, game handles it */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #root {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* THE CONTAINER MATCHES YOUR IMAGE LAYOUT */
+    .container {
+      width: 100%;
+      max-width: 800px; /* Slightly wider to fit the shelf on right */
+      height: 100vh;
+      max-height: 900px;
+      position: relative;
+      background-color: #e0d0b0; 
+      /* REPLACE THIS URL WITH YOUR UPLOADED IMAGE URL */
+      background-image: url('IMG_4313.png'); 
+      background-size: 100% 100%; /* Stretch to fit container */
+      background-repeat: no-repeat;
+      display: grid;
+      /* Left column (Desk) gets auto space, Right column (Shelf) gets fixed width */
+      grid-template-columns: 1fr 28%; 
+      grid-template-rows: 60px 1fr 1fr 1fr; /* Header, Scroll, Bed, Type */
+      gap: 0px;
+    }
+
+    /* --- ZONES --- */
+    
+    .header-zone {
+      grid-column: 1 / -1; /* Spans full width */
+      grid-row: 1;
+      z-index: 10;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .scroll-zone {
+      grid-column: 1;
+      grid-row: 2;
+      padding: 30px 40px 10px 40px; /* Padding pushes content into the "paper" area of your image */
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .bed-zone {
+      grid-column: 1;
+      grid-row: 3;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .tray-zone {
+      grid-column: 1;
+      grid-row: 4;
+      padding: 20px 30px 10px 30px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .shelf-zone {
+      grid-column: 2;
+      grid-row: 2 / 5; /* Spans from scroll area down to bottom */
+      padding: 40px 10px 10px 5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      overflow-y: auto;
+    }
+
+    /* --- COMPONENT STYLES --- */
+
+    /* Buttons */
+    button {
+      background: var(--ink);
+      color: #f0e6d2;
+      border: 1px solid #8b4513;
+      padding: 6px 10px;
+      font-family: 'Georgia', serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+    }
+    button.secondary{
+      background: rgba(255,255,255,0.5);
+      color: var(--ink);
+      border: 2px solid var(--ink);
+    }
+
+    /* Job Cards (Now transparent to look like ink on the scroll) */
+    .job-card {
+      background: rgba(255, 255, 255, 0.4); /* See-through! */
+      border-bottom: 2px solid var(--ink);
+      padding: 8px;
+      width: 100%;
+      margin-bottom: 8px;
+      text-align: center;
+      cursor: pointer;
+      color: #000;
+    }
+    .job-card:hover { background: rgba(255,255,255,0.7); }
+    .job-card h4 { margin: 0 0 4px 0; font-size: 1rem; }
+    
+    /* Type Blocks */
+    .type-block {
+      width: 38px;
+      height: 38px;
+      background: #5d4037;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+      font-weight: bold;
+      border: 2px solid #3e2723;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+      cursor: pointer;
+      user-select: none;
+    }
+    .type-block.placed {
+      background: #8d6e63;
+    }
+
+    .block-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+    }
+
+    /* Shelf Items (Vertical Stack) */
+    .shelf-item {
+      background: #fff;
+      border: 1px solid #000;
+      width: 80%;
+      padding: 5px;
+      text-align: center;
+      font-size: 0.7rem;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    .shelf-item button {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #d32f2f;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      font-size: 10px;
+      line-height: 20px;
+    }
+
+    /* Modals */
+    .modal-backdrop{
+      position:absolute; inset:0; background: rgba(0,0,0,0.8);
+      display:flex; justify-content:center; alignItems:center; z-index: 100;
+    }
+    .modal{
+      background: #f0e6d2; border: 4px double var(--ink);
+      padding: 20px; max-width: 400px; width: 90%;
+    }
+    .tagrow { display:flex; gap:5px; margin-bottom:10px; flex-wrap:wrap; }
+    .tag { font-size:10px; padding:2px 5px; border:1px solid #000; }
+
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const RATE = { BEST: 0.066, FAST: 0.035, MED: 0.020, SLOW: 0.010, CRAWL:0.005 };
+    function shuffle(a) { return a.sort(() => Math.random() - 0.5); }
+    function pickN(a, n) { return shuffle([...a]).slice(0, n); }
+    function randInt(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
+    function uid(){ return Math.random().toString(36).substr(2, 9); }
+
+    // DATA POOLS (Abbreviated for space, full list in logic)
+    const CHINA_JOBS = [
+      { id: 201, name: "Tax Register", type:"Govt", price: 30, pattern: ["稅","收","記","錄"], oneLiner:"Ledger sheet." },
+      { id: 202, name: "Exam Excerpt", type:"Edu", price: 45, pattern: ["文","章","學","習"], oneLiner:"Study text." },
+      { id: 203, name: "Sutra Leaflet", type:"Religion", price: 60, pattern: ["南","無","阿","彌"], oneLiner:"Devotion." },
+      { id: 204, name: "Price Bulletin", type:"Trade", price: 35, pattern: ["米","價","今","日"], oneLiner:"Market info." },
+      { id: 205, name: "Med Recipe", type:"Science", price: 40, pattern: ["藥","方","調","配"], oneLiner:"Herbal guide." },
+      { id: 1, name: "Diamond Sutra", type:"Religion", price: 60, pattern: ["金","剛","經","卷"], oneLiner:"First book." },
+      { id: 2, name: "Exam Guide", type:"Govt", price: 45, pattern: ["科","舉","策","論"], oneLiner:"Cheat sheet." },
+      { id: 3, name: "Paper Money", type:"Govt", price: 55, pattern: ["大","元","寶","鈔"], oneLiner:"Currency." },
+      { id: 6, name: "Imp. Calendar", type:"Govt", price: 65, pattern: ["皇","曆","節","令"], oneLiner:"Official dates." }
+    ];
+
+    const GERMANY_JOBS = [
+      { id: 301, name:"Disputation", type:"Acad", sellRate: RATE.CRAWL, payout:10, pattern:["Q","U","A","E"], oneLiner:"Latin debate." },
+      { id: 302, name:"Indulgence", type:"Safe", sellRate: RATE.MED, payout:15, pattern:["P","A","X","X"], oneLiner:"Forgiveness receipt." },
+      { id: 305, name:"95 Theses", type:"Viral", sellRate: RATE.BEST, payout:20, pattern:["T","H","E","S"], oneLiner:"Reformation spark." },
+      { id: 307, name:"Ballad Sheet", type:"Tabloid", sellRate: RATE.MED, payout:12, pattern:["L","I","E","D"], oneLiner:"News song." },
+      { id: 3, name:"Pope Cartoon", type:"Rage", sellRate: RATE.FAST, payout:18, pattern:["H","A","H","A"], oneLiner:"Mockery." },
+      { id: 6, name:"Almanac", type:"Safe", sellRate: RATE.SLOW, payout:10, pattern:["A","L","M","N"], oneLiner:"Weather info." },
+      { id: 8, name:"New Testament", type:"Viral", sellRate: RATE.MED, payout:16, pattern:["B","I","B","L"], oneLiner:"German bible." }
+    ];
+
+    // --- MODALS ---
+    function JobModal({ job, onAccept, onReject }) {
+      if (!job) return null;
+      return (
+        <div className="modal-backdrop" onClick={onReject}>
+          <div className="modal" onClick={(e)=>e.stopPropagation()}>
+            <h3>{job.name}</h3>
+            <p>{job.oneLiner}</p>
+            <div className="tagrow">
+               <span className="tag">{job.type}</span>
+               {job.price && <span className="tag">Pay: {job.price}</span>}
+            </div>
+            <div style={{marginTop:20, display:'flex', gap:10}}>
+              <button className="secondary" onClick={onReject} style={{flex:1}}>Back</button>
+              <button onClick={onAccept} style={{flex:1}}>Accept</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function QtyModal({ title, onConfirm, onCancel }) {
+      const [q, setQ] = React.useState(10);
+      if(!title) return null;
+      return (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h3>Print: {title}</h3>
+            <p>How many copies?</p>
+            <input type="number" value={q} onChange={e=>setQ(e.target.value)} style={{width:'50px', fontSize:'1.2rem'}} />
+            <div style={{marginTop:20, display:'flex', gap:10}}>
+              <button className="secondary" onClick={onCancel}>Cancel</button>
+              <button onClick={()=>onConfirm(q)}>Print</button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // --- MAIN GAME COMPONENT ---
+    function App() {
+      const [mode, setMode] = React.useState('menu');
+      const [wallet, setWallet] = React.useState(0);
+      
+      // Game State
+      const [board, setBoard] = React.useState([]);
+      const [job, setJob] = React.useState(null); // Active job
+      const [placed, setPlaced] = React.useState([]);
+      const [tray, setTray] = React.useState([]);
+      const [shelf, setShelf] = React.useState([]); // Germany only
+      
+      // Modals
+      const [viewJob, setViewJob] = React.useState(null);
+      const [qtyTitle, setQtyTitle] = React.useState(null);
+
+      // China Specific
+      const [orderNo, setOrderNo] = React.useState(null);
+      const [inputOrder, setInputOrder] = React.useState("");
+      const [unlocked, setUnlocked] = React.useState(false);
+
+      // Germany Specific
+      const [runRem, setRunRem] = React.useState(0);
+      const [runJob, setRunJob] = React.useState(null);
+      const [msg, setMsg] = React.useState("");
+
+      // --- INIT ---
+      const start = (m) => {
+        setMode(m);
+        setWallet(0);
+        setShelf([]);
+        setJob(null);
+        setPlaced([]);
+        setTray([]);
+        setMsg("");
+        
+        if(m==='china') setBoard(pickN(CHINA_JOBS, 3));
+        if(m==='germany') setBoard(pickN(GERMANY_JOBS, 3));
+      };
+
+      // --- LOGIC ---
+      const clickJob = (j) => setViewJob(j);
+      
+      const acceptJob = () => {
+        const j = viewJob;
+        setViewJob(null);
+        setJob(j);
+        setPlaced([]);
+        setTray(shuffle([...j.pattern]));
+        
+        if (mode === 'china') {
+          setOrderNo(String(randInt(100,999)));
+          setInputOrder("");
+          setUnlocked(false);
+          setMsg("Enter Order # found in scroll.");
+        } else {
+          setMsg("Set the type correctly.");
+        }
+      };
+
+      // Block Clicking
+      const clickBlock = (char) => {
+        if (!job) return;
+        if (mode === 'china' && !unlocked) return;
+        if (runRem > 0) return;
+
+        const newPlaced = [...placed, char];
+        setPlaced(newPlaced);
+        
+        // Remove from tray
+        const idx = tray.indexOf(char);
+        const newTray = [...tray];
+        newTray.splice(idx,1);
+        setTray(newTray);
+
+        if (newPlaced.length === 4) checkWin(newPlaced);
+      };
+
+      const checkWin = (attempt) => {
+        const correct = attempt.every((c,i) => c === job.pattern[i]);
+        if (correct) {
+          if (mode === 'china') {
+            setWallet(w => w + job.price);
+            setMsg(`Paid +${job.price}`);
+            setTimeout(() => {
+               setJob(null); setBoard(pickN(CHINA_JOBS,3)); setMsg("");
+            }, 1000);
+          } else {
+            // Germany -> Qty
+            setQtyTitle(job.name);
+            setRunJob(job);
+            setJob(null);
+          }
+        } else {
+          setMsg("Misprint! Resetting...");
+          setTimeout(() => {
+            setPlaced([]);
+            setTray(shuffle([...job.pattern]));
+          }, 800);
+        }
+      };
+
+      // China Unlock
+      const tryUnlock = () => {
+        if(inputOrder === orderNo) {
+          setUnlocked(true);
+          setMsg("Tray unlocked.");
+        }
+      };
+
+      // Germany Print Run
+      const startRun = (q) => {
+        setQtyTitle(null);
+        setRunRem(q);
+        setBoard(pickN(GERMANY_JOBS, 3));
+      };
+
+      // Germany Tick (Sales & Printing)
+      React.useEffect(() => {
+        if (mode !== 'germany') return;
+        const iv = setInterval(() => {
+          // Sell
+          setShelf(curr => {
+            const next = [...curr];
+            for(let i=next.length-1; i>=0; i--){
+              if(Math.random() < next[i].sellRate){
+                setWallet(w => w + next[i].payout);
+                next.splice(i,1);
+              }
+            }
+            return next;
+          });
+        }, 500);
+
+        // Print
+        const pv = setInterval(() => {
+          if (runRem > 0) {
+            setShelf(curr => {
+               if(curr.length >= 6) return curr; // Shelf full cap
+               setRunRem(r => r-1);
+               return [...curr, {...runJob, uid:uid()}];
+            });
+          }
+        }, 500);
+
+        return () => { clearInterval(iv); clearInterval(pv); }
+      }, [mode, runRem, runJob]);
+
+
+      // --- RENDER ---
+      if (mode === 'menu') return (
+        <div className="container" style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}}>
+          <h1 style={{background:'rgba(255,255,255,0.8)', padding:10}}>Press & Profit</h1>
+          <div style={{display:'flex', gap:20}}>
+            <button onClick={()=>start('china')} style={{fontSize:20}}>Yuan China</button>
+            <button onClick={()=>start('germany')} style={{fontSize:20}}>HRE Germany</button>
+          </div>
+        </div>
+      );
+
+      return (
+        <div className="container">
+          
+          <JobModal job={viewJob} onAccept={acceptJob} onReject={()=>setViewJob(null)} />
+          <QtyModal title={qtyTitle} onConfirm={startRun} onCancel={()=>setQtyTitle(null)} />
+
+          {/* TOP BAR */}
+          <div className="header-zone">
+             <button onClick={()=>setMode('menu')}>Exit</button>
+             <span style={{background:'#fff', padding:'2px 8px', fontWeight:'bold'}}>
+               {mode==='china'?'Yuan 1325':'Germany 1517'} | 💰 {wallet}
+               {runRem > 0 && ` | Printing: ${runRem}`}
+             </span>
+          </div>
+
+          {/* SCROLL AREA (Jobs) */}
+          <div className="scroll-zone">
+             {!job ? (
+               board.map(j => (
+                 <div key={j.id} className="job-card" onClick={()=>clickJob(j)}>
+                   <h4>{j.name}</h4>
+                   <small>{j.oneLiner}</small>
+                 </div>
+               ))
+             ) : (
+               <div style={{textAlign:'center', background:'rgba(255,255,255,0.6)', padding:10, width:'100%'}}>
+                 <h3>{job.name}</h3>
+                 {mode==='china' && <div style={{margin:10}}>Order #: <b>{orderNo}</b></div>}
+                 <div>Target: <b>{job.pattern.join("")}</b></div>
+                 <div style={{marginTop:5, color:'red'}}>{msg}</div>
+               </div>
+             )}
+          </div>
+
+          {/* PRINT BED (Middle) */}
+          <div className="bed-zone">
+             {/* China Unlock Input */}
+             {mode==='china' && job && !unlocked && (
+               <div style={{display:'flex', gap:5}}>
+                 <input value={inputOrder} onChange={e=>setInputOrder(e.target.value)} placeholder="Order #" style={{width:60, textAlign:'center'}}/>
+                 <button onClick={tryUnlock}>Unlock</button>
+               </div>
+             )}
+             
+             {/* The Bed */}
+             {(unlocked || mode==='germany') && job && (
+                <div className="block-container" style={{maxWidth:200}}>
+                   {placed.map((c,i)=>(
+                     <div key={i} className="type-block placed">{c}</div>
+                   ))}
+                   {/* Ghost blocks */}
+                   {[...Array(4-placed.length)].map((_,i)=>(
+                      <div key={'g'+i} className="type-block" style={{opacity:0.2, background:'transparent', border:'2px dashed #3e2723'}} />
+                   ))}
+                </div>
+             )}
+             {!job && <small style={{opacity:0.5}}>Select a job from the scroll</small>}
+          </div>
+
+          {/* TYPE TRAY (Bottom) */}
+          <div className="tray-zone">
+             {(unlocked || mode==='germany') && job ? (
+                <div className="block-container">
+                  {tray.map((c,i)=>(
+                    <div key={i} className="type-block" onClick={()=>clickBlock(c)}>{c}</div>
+                  ))}
+                </div>
+             ) : (
+               <div style={{opacity:0.5, fontStyle:'italic'}}>Tray Closed</div>
+             )}
+          </div>
+
+          {/* SHELF (Right Side) */}
+          <div className="shelf-zone">
+             {/* In China mode, maybe just show completed count or nothing */}
+             {mode === 'germany' && shelf.map((item, idx) => (
+                <div key={item.uid} className="shelf-item">
+                  <b>{item.name}</b>
+                  <br/>{item.pattern.join("")}
+                  <button onClick={()=>{
+                    const n = [...shelf]; n.splice(idx,1); setShelf(n);
+                  }}>x</button>
+                </div>
+             ))}
+             {mode === 'germany' && shelf.length===0 && <small style={{textAlign:'center', opacity:0.6}}>Rack Empty</small>}
+          </div>
+
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
