@@ -11,66 +11,51 @@
 
   <style>
     :root{
-      --uiShadow: rgba(0,0,0,0.45);
-      --paper: rgba(245,236,220,0.94);
-      --ink: rgba(20,18,16,0.92);
-      --btnBg: rgba(10,10,12,0.75);
-      --btnBr: rgba(255,255,255,0.28);
+      --ui-ink: rgba(20, 18, 16, 0.92);
+      --ui-paper: rgba(245, 236, 220, 0.92);
+      --ui-paper2: rgba(245, 236, 220, 0.82);
+      --ui-shadow: rgba(0,0,0,0.45);
+      --ui-glow: rgba(255,255,255,0.20);
+
+      --btn-bg: rgba(10,10,12,0.75);
+      --btn-br: rgba(255,255,255,0.28);
+
+      --spine-bg: rgba(245, 240, 232, 0.92);
+      --spine-ink: rgba(30, 25, 20, 0.95);
+      --spine-br: rgba(0,0,0,0.35);
     }
+
     *{ box-sizing:border-box; }
     body{
       margin:0;
       height:100vh;
       overflow:hidden;
-      background:#000;
       font-family: Georgia, serif;
-    }
-
-    /* FRAME: keeps a consistent “image coordinate system” */
-    .frame{
-      position:relative;
-      width:100%;
-      height:100%;
       background:#000;
-      display:flex;
-      align-items:center;
-      justify-content:center;
     }
 
-    /* STAGE: letterboxed image (no cropping), overlays align predictably */
+    /* Backdrop stage */
     .stage{
       position:relative;
       width:100%;
       height:100%;
-      max-width: 1200px;
-      max-height: 100vh;
-    }
-    .backdrop{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      object-fit:contain;       /* KEY: no crop */
-      object-position:center;
-      user-select:none;
-      pointer-events:none;
+      background: url("IMG_4315.png") center / cover no-repeat;
     }
 
-    /* soft vignette (optional) */
+    /* slight vignette to help readability without “UI panels” */
     .vignette{
-      position:absolute;
-      inset:0;
-      pointer-events:none;
+      position:absolute; inset:0;
       background:
-        radial-gradient(1200px 700px at 30% 20%, rgba(0,0,0,0.08), rgba(0,0,0,0.35)),
-        linear-gradient(180deg, rgba(0,0,0,0.14), rgba(0,0,0,0.28));
+        radial-gradient(1200px 700px at 30% 20%, rgba(0,0,0,0.12), rgba(0,0,0,0.45)),
+        linear-gradient(180deg, rgba(0,0,0,0.20), rgba(0,0,0,0.38));
+      pointer-events:none;
     }
 
-    /* Top bar */
+    /* Top bar (minimal, translucent) */
     .topbar{
       position:absolute;
       left:0; right:0; top:0;
-      z-index:10;
+      z-index:5;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -81,62 +66,156 @@
       background: rgba(0,0,0,0.45);
       backdrop-filter: blur(3px);
     }
-    .topbar .group{ display:flex; gap:8px; align-items:center; min-width: 140px; }
-    .topbar .center{ flex:1; text-align:center; font-weight:bold; opacity:0.95; }
-
+    .topbar .group{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-width: 130px;
+    }
+    .topbar .center{
+      flex:1;
+      text-align:center;
+      opacity:0.95;
+      font-weight:bold;
+      letter-spacing:0.3px;
+    }
     button{
       font-family: Georgia, serif;
       padding:7px 10px;
-      background: var(--btnBg);
+      background: var(--btn-bg);
       color:#fff;
-      border:1px solid var(--btnBr);
+      border:1px solid var(--btn-br);
       border-radius:10px;
       cursor:pointer;
     }
     button:hover{ border-color: rgba(255,255,255,0.40); }
 
-    /* Overlay boxes live in normalized (0..1) coordinates via inline style */
-    .box{
+    /* ---------- HITBOX LAYOUT (place UI over painted objects) ---------- */
+
+    /* ADJUST HERE: fine-tune these if your backdrop crops differently on some screens */
+    .hit-order-scroll{   /* big scroll area (current order) */
       position:absolute;
-      z-index:6;
-      border-radius:12px;
+      left: 7%;
+      top: 17%;
+      width: 52%;
+      height: 22%;
+      z-index:3;
+      pointer-events:none; /* display only */
     }
 
-    /* “Current order” scroll box styling */
-    .scrollCard{
-      width:100%;
-      height:100%;
-      border-radius:16px;
-      background: rgba(245,236,220,0.70);
-      border: 1px solid rgba(0,0,0,0.18);
-      box-shadow: 0 16px 36px rgba(0,0,0,0.30);
-      padding:12px;
+    .hit-type-area{      /* type composing area (bottom-left desk) */
+      position:absolute;
+      left: 7%;
+      top: 50%;
+      width: 56%;
+      height: 40%;
+      z-index:3;
+    }
+
+    .hit-shelves{        /* right shelf column area */
+      position:absolute;
+      left: 69%;
+      top: 18%;
+      width: 27%;
+      height: 76%;
+      z-index:3;
       display:flex;
       flex-direction:column;
-      justify-content:center;
-      gap:6px;
-      color:#000;
+      gap: 3.8%;
+      padding: 2% 3%;
     }
-    .scrollCard .h{ font-weight:bold; font-size:14px; }
-    .scrollCard .p{ font-size:13px; color: rgba(0,0,0,0.72); }
-    .scrollCard .pat{ font-size:14px; font-weight:bold; letter-spacing:1px; }
 
-    /* Type area */
-    .typeCard{
-      width:100%;
-      height:100%;
-      border-radius:14px;
-      background: rgba(245,236,220,0.80);
-      border: 1px solid rgba(0,0,0,0.22);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
-      padding:12px;
+    /* Each shelf bay sits on top of the art’s shelf compartments */
+    .shelf-bay{
+      flex:1;
+      position:relative;
+      border-radius:10px;
+      /* NO big panel — just subtle “edge read” */
+      background: rgba(0,0,0,0.06);
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.10),
+        inset 0 -14px 18px rgba(0,0,0,0.18);
+      overflow:hidden;
+    }
+
+    .shelf-label{
+      position:absolute;
+      left:8px;
+      top:7px;
+      font-size:10px;
+      color: rgba(255,255,255,0.75);
+      text-shadow: 0 2px 6px rgba(0,0,0,0.55);
+      pointer-events:none;
+    }
+
+    /* Inventory “spines” */
+    .spines{
+      position:absolute;
+      left:6px; right:6px;
+      bottom:6px;
+      top:22px;
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:6px;
+      align-content:end;
+      padding-bottom:2px;
+    }
+
+    .spine{
+      height: 26px;
+      border-radius:6px;
+      background: var(--spine-bg);
+      border:1px solid var(--spine-br);
+      box-shadow:
+        0 6px 10px rgba(0,0,0,0.22),
+        inset 0 1px 0 rgba(255,255,255,0.55);
+      color: var(--spine-ink);
+      font-size:8px;
+      line-height:1.1;
+      padding:3px 5px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      cursor:pointer;
+      user-select:none;
+    }
+    .spine .t{
+      font-weight:bold;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+    }
+    .spine .x{
+      align-self:flex-end;
+      font-size:10px;
+      opacity:0.75;
+    }
+
+    /* Type composing visuals (kept “paper/wood” not modern UI) */
+    .type-card{
+      position:absolute;
+      inset:0;
       display:flex;
       flex-direction:column;
       gap:10px;
-      color:#000;
+      padding:12px;
+      border-radius:14px;
+      background: rgba(245,236,220,0.80);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+      border: 1px solid rgba(0,0,0,0.25);
+      backdrop-filter: blur(1px);
     }
-    .typeHead{ display:flex; justify-content:space-between; gap:10px; }
-    .typeHead .sub{ font-size:12px; color: rgba(0,0,0,0.70); }
+    .type-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .type-title b{ color:#000; }
+    .type-title .sub{
+      font-size:12px;
+      color: rgba(0,0,0,0.72);
+    }
 
     .bed, .tray{
       display:flex;
@@ -144,18 +223,21 @@
       gap:8px;
       padding:10px;
       border-radius:10px;
-      border:1px solid rgba(0,0,0,0.25);
+      border:1px solid rgba(0,0,0,0.28);
       background: rgba(255,255,255,0.85);
       min-height:60px;
       align-items:center;
     }
+
     .block{
       width:44px;
       height:44px;
       border-radius:10px;
       background: rgba(93,64,55,0.92);
       border:1px solid rgba(0,0,0,0.35);
-      box-shadow: 0 10px 18px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.18);
+      box-shadow:
+        0 10px 18px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.18);
       color:#fff;
       display:flex;
       align-items:center;
@@ -166,60 +248,50 @@
       user-select:none;
     }
 
-    /* Shelves: NO panel. Just “inventory spines” sitting on the painted shelves */
-    .shelfBay{
+    /* “Current order” scroll overlay */
+    .scroll-card{
       width:100%;
       height:100%;
-      border-radius:10px;
-      background: rgba(0,0,0,0.03);
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.10),
-        inset 0 -14px 18px rgba(0,0,0,0.14);
-      overflow:hidden;
-      position:relative;
-    }
-    .spines{
-      position:absolute;
-      left:6px; right:6px;
-      top:8px; bottom:6px;
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:6px;
-      align-content:end;
-    }
-    .spine{
-      height: 26px;
-      border-radius:6px;
-      background: rgba(245,240,232,0.92);
-      border:1px solid rgba(0,0,0,0.30);
-      box-shadow: 0 6px 10px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.55);
-      color: rgba(30,25,20,0.95);
-      font-size:8px;
-      line-height:1.1;
-      padding:3px 5px;
+      border-radius:16px;
+      background: rgba(245,236,220,0.72);
+      border: 1px solid rgba(0,0,0,0.20);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.30);
+      padding:12px;
       display:flex;
       flex-direction:column;
-      justify-content:space-between;
-      cursor:pointer;
-      user-select:none;
+      justify-content:center;
+      gap:6px;
     }
-    .spine .t{ font-weight:bold; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-    .spine .x{ align-self:flex-end; font-size:10px; opacity:0.75; }
+    .scroll-card .h{
+      font-weight:bold;
+      color:#000;
+      font-size:14px;
+    }
+    .scroll-card .p{
+      font-size:13px;
+      color: rgba(0,0,0,0.72);
+    }
+    .scroll-card .pat{
+      font-size:14px;
+      letter-spacing:1px;
+      font-weight:bold;
+      color:#000;
+    }
 
     /* Orders overlay */
     .overlay{
       position:absolute;
       inset:0;
-      z-index:50;
       background: rgba(0,0,0,0.72);
+      z-index:20;
       display:flex;
-      align-items:center;
       justify-content:center;
+      align-items:center;
       padding:12px;
     }
     .modal{
-      width:min(560px, 96vw);
-      max-height:86vh;
+      width: min(560px, 96vw);
+      max-height: 86vh;
       overflow:auto;
       background: rgba(245,236,220,0.96);
       border: 3px double rgba(0,0,0,0.85);
@@ -227,6 +299,10 @@
       padding:14px;
       border-radius:14px;
       color:#000;
+    }
+    .modal h3{
+      margin:0 0 10px;
+      font-size:16px;
     }
     .job{
       border: 1px solid rgba(0,0,0,0.35);
@@ -239,241 +315,142 @@
     .job:hover{ background: rgba(255,255,255,0.92); }
     .job small{ color: rgba(0,0,0,0.70); }
 
-    /* CALIBRATION: visible outlines + draggable boxes */
-    .calOutline{
-      outline: 2px dashed rgba(0,255,255,0.85);
-      background: rgba(0,255,255,0.10);
-      cursor: move;
-    }
-    .calTag{
-      position:absolute;
-      left:6px;
-      top:6px;
-      font-size:10px;
-      color:#fff;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.65);
-      pointer-events:none;
-    }
-    .hint{
-      position:absolute;
-      left:10px;
-      bottom:10px;
-      z-index:60;
-      background: rgba(0,0,0,0.55);
-      color:#fff;
-      border:1px solid rgba(255,255,255,0.25);
-      border-radius:12px;
-      padding:10px;
-      font-size:12px;
-      max-width: 520px;
+    /* Mobile: stack shelves under type area if needed */
+    @media (max-width: 820px){
+      .hit-shelves{
+        left: 6%;
+        top: 92%;
+        width: 88%;
+        height: 6%;
+        display:none; /* on small screens shelves in art won’t line up reliably */
+      }
+      .hit-type-area{
+        left: 5%;
+        width: 90%;
+      }
+      .hit-order-scroll{
+        left: 5%;
+        width: 90%;
+      }
     }
   </style>
 </head>
 
 <body>
-<div id="root"></div>
+  <div id="root"></div>
 
-<script type="text/babel">
-  // ---------------------------
-  // Data (you can swap in your full table later)
-  // ---------------------------
-  const JOBS = [
-    { id: 1, name:"The 95 Theses", pattern:["T","H","E","S"], sellRate:0.08 },
-    { id: 2, name:"Indulgence Form", pattern:["I","N","D","L"], sellRate:0.03 },
-    { id: 3, name:"Satirical Woodcut", pattern:["H","A","H","A"], sellRate:0.05 },
-    { id: 4, name:"Ballad Sheet", pattern:["L","I","E","D"], sellRate:0.02 },
-    { id: 5, name:"Donatus (Latin Grammar)", pattern:["D","O","N","A"], sellRate:0.01 },
-  ];
-  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+  <script type="text/babel">
+    // ---------------------------
+    // Minimal job set (expand later)
+    // ---------------------------
+    const JOBS = [
+      { id: 1, name:"The 95 Theses", pattern:["T","H","E","S"], sellRate:0.08 },
+      { id: 2, name:"Indulgence Form", pattern:["I","N","D","L"], sellRate:0.03 },
+      { id: 3, name:"Satirical Woodcut", pattern:["H","A","H","A"], sellRate:0.05 },
+      { id: 4, name:"Ballad Sheet", pattern:["L","I","E","D"], sellRate:0.02 },
+      { id: 5, name:"Donatus (Latin Grammar)", pattern:["D","O","N","A"], sellRate:0.01 },
+    ];
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-  // ---------------------------
-  // Layout defaults (normalized coords 0..1)
-  // These are your “exact match” handles. Calibrate once, saved to localStorage.
-  // ---------------------------
-  const DEFAULT_LAYOUT = {
-    scroll:  { x:0.07, y:0.17, w:0.52, h:0.22 },
-    type:    { x:0.07, y:0.50, w:0.56, h:0.40 },
+    // ---------------------------
+    // App
+    // ---------------------------
+    function App(){
+      const SHELF_CAPACITY = 20;
 
-    // 4 shelf bays on the right (each separately calibratable)
-    shelf1:  { x:0.69, y:0.20, w:0.26, h:0.17 },
-    shelf2:  { x:0.69, y:0.40, w:0.26, h:0.17 },
-    shelf3:  { x:0.69, y:0.60, w:0.26, h:0.17 },
-    shelf4:  { x:0.69, y:0.80, w:0.26, h:0.17 },
-  };
+      const [wallet, setWallet] = React.useState(0);
+      const [ordersOpen, setOrdersOpen] = React.useState(false);
 
-  const LS_KEY = "pp_germany_layout_v1";
+      const [job, setJob] = React.useState(null);
+      const [tray, setTray] = React.useState([]);
+      const [bed, setBed] = React.useState([]);
 
-  function loadLayout(){
-    try{
-      const raw = localStorage.getItem(LS_KEY);
-      if(!raw) return DEFAULT_LAYOUT;
-      const obj = JSON.parse(raw);
-      return { ...DEFAULT_LAYOUT, ...obj };
-    }catch(e){
-      return DEFAULT_LAYOUT;
-    }
-  }
-  function saveLayout(layout){
-    localStorage.setItem(LS_KEY, JSON.stringify(layout));
-  }
+      // single inventory list; we’ll “display” it across 4 bays visually
+      const [stock, setStock] = React.useState([]);
 
-  function clamp01(n){ return Math.max(0, Math.min(1, n)); }
-
-  function App(){
-    const SHELF_CAP = 20;
-
-    const [wallet, setWallet] = React.useState(0);
-    const [ordersOpen, setOrdersOpen] = React.useState(false);
-
-    const [job, setJob] = React.useState(null);
-    const [tray, setTray] = React.useState([]);
-    const [bed, setBed] = React.useState([]);
-
-    const [stock, setStock] = React.useState([]);
-    const [calibrate, setCalibrate] = React.useState(false);
-    const [layout, setLayout] = React.useState(()=>loadLayout());
-
-    const stageRef = React.useRef(null);
-    const dragRef = React.useRef(null); // {key, startMouse, startBox}
-
-    // Sales loop
-    React.useEffect(()=>{
-      const t = setInterval(()=>{
-        setStock(prev=>{
-          if(prev.length === 0) return prev;
-          const next = [...prev];
-          for(let i=next.length-1;i>=0;i--){
-            if(Math.random() < next[i].sellRate){
-              setWallet(w => w + 1);
-              next.splice(i, 1);
-            }
-          }
-          return next;
-        });
-      }, 450);
-      return ()=>clearInterval(t);
-    },[]);
-
-    function shuffle(arr){
-      const a = [...arr];
-      for(let i=a.length-1;i>0;i--){
-        const j = Math.floor(Math.random()*(i+1));
-        [a[i],a[j]]=[a[j],a[i]];
-      }
-      return a;
-    }
-
-    function acceptJob(j){
-      setJob(j);
-      setTray(shuffle(j.pattern));
-      setBed([]);
-      setOrdersOpen(false);
-    }
-
-    function clickBlock(ch){
-      if(!job) return;
-
-      const nextBed = [...bed, ch];
-      setBed(nextBed);
-
-      const idx = tray.indexOf(ch);
-      const nextTray = [...tray];
-      if(idx >= 0) nextTray.splice(idx, 1);
-      setTray(nextTray);
-
-      if(nextBed.length === 4){
-        const ok = nextBed.every((c,i)=>c === job.pattern[i]);
-        if(ok){
+      // ---------------------------
+      // SALES LOOP (slow + steady)
+      // ---------------------------
+      React.useEffect(()=>{
+        const t = setInterval(()=>{
           setStock(prev=>{
-            if(prev.length >= SHELF_CAP) return prev;
-            return [...prev, { ...job, uid: uid() }];
+            if(prev.length === 0) return prev;
+            const next = [...prev];
+            for(let i=next.length-1;i>=0;i--){
+              if(Math.random() < next[i].sellRate){
+                setWallet(w => w + 1); // hidden payout (keep simple here)
+                next.splice(i, 1);
+              }
+            }
+            return next;
           });
+        }, 450);
+        return ()=>clearInterval(t);
+      },[]);
+
+      // ---------------------------
+      // Helpers
+      // ---------------------------
+      function shuffle(arr){
+        const a = [...arr];
+        for(let i=a.length-1;i>0;i--){
+          const j = Math.floor(Math.random()*(i+1));
+          [a[i],a[j]]=[a[j],a[i]];
         }
+        return a;
+      }
+
+      function acceptJob(j){
+        setJob(j);
+        setTray(shuffle(j.pattern));
         setBed([]);
-        setTray(shuffle(job.pattern));
+        setOrdersOpen(false);
       }
-    }
 
-    function trash(uidToRemove){
-      setStock(prev => prev.filter(x => x.uid !== uidToRemove));
-    }
+      function clickBlock(ch){
+        if(!job) return;
 
-    // Spread inventory across 4 bays for display
-    const bays = React.useMemo(()=>{
-      const perBay = Math.ceil(SHELF_CAP / 4); // 5 if cap 20
-      const out = [[],[],[],[]];
-      for(let i=0;i<stock.length;i++){
-        out[Math.floor(i / perBay)].push(stock[i]);
+        const nextBed = [...bed, ch];
+        setBed(nextBed);
+
+        // remove one instance from tray
+        const idx = tray.indexOf(ch);
+        const nextTray = [...tray];
+        if(idx >= 0) nextTray.splice(idx, 1);
+        setTray(nextTray);
+
+        if(nextBed.length === 4){
+          const ok = nextBed.every((c,i)=>c === job.pattern[i]);
+
+          if(ok){
+            setStock(prev=>{
+              if(prev.length >= SHELF_CAPACITY) return prev; // full
+              return [...prev, { ...job, uid: uid() }];
+            });
+          }
+
+          // reset composition either way
+          setBed([]);
+          setTray(shuffle(job.pattern));
+        }
       }
-      return out;
-    }, [stock]);
 
-    // Convert normalized box -> absolute style inside .stage
-    function boxStyle(b){
-      return {
-        left: (b.x*100) + "%",
-        top: (b.y*100) + "%",
-        width: (b.w*100) + "%",
-        height: (b.h*100) + "%"
-      };
-    }
-
-    // Calibration drag
-    function onMouseDownBox(key, e){
-      if(!calibrate) return;
-      if(!stageRef.current) return;
-      const rect = stageRef.current.getBoundingClientRect();
-      dragRef.current = {
-        key,
-        startMouse: { x: e.clientX, y: e.clientY },
-        startBox: { ...layout[key] },
-        rect
-      };
-      e.preventDefault();
-    }
-
-    React.useEffect(()=>{
-      function onMove(e){
-        if(!dragRef.current) return;
-        const { key, startMouse, startBox, rect } = dragRef.current;
-        const dx = (e.clientX - startMouse.x) / rect.width;
-        const dy = (e.clientY - startMouse.y) / rect.height;
-
-        setLayout(prev=>{
-          const next = { ...prev };
-          next[key] = {
-            ...next[key],
-            x: clamp01(startBox.x + dx),
-            y: clamp01(startBox.y + dy)
-          };
-          return next;
-        });
+      function trash(uidToRemove){
+        setStock(prev => prev.filter(x => x.uid !== uidToRemove));
       }
-      function onUp(){
-        if(!dragRef.current) return;
-        dragRef.current = null;
-      }
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
-      return ()=>{
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-      };
-    }, [layout]);
 
-    function saveCal(){
-      saveLayout(layout);
-      setCalibrate(false);
-    }
-    function resetCal(){
-      setLayout(DEFAULT_LAYOUT);
-      saveLayout(DEFAULT_LAYOUT);
-    }
+      // split stock across 4 bays for display only
+      const bays = React.useMemo(()=>{
+        const perBay = Math.ceil(SHELF_CAPACITY / 4); // 5 if cap 20
+        const out = [[],[],[],[]];
+        for(let i=0;i<stock.length;i++){
+          out[Math.floor(i / perBay)].push(stock[i]);
+        }
+        return out;
+      }, [stock]);
 
-    return (
-      <div className="frame">
-        <div className="stage" ref={stageRef}>
-          <img className="backdrop" src="IMG_4315.png" alt="Backdrop"/>
+      return (
+        <div className="stage">
           <div className="vignette"></div>
 
           <div className="topbar">
@@ -486,22 +463,12 @@
 
             <div className="group" style={{justifyContent:"flex-end"}}>
               <div style={{fontWeight:"bold"}}>💰 {wallet}</div>
-              <button onClick={()=>setCalibrate(c=>!c)}>
-                {calibrate ? "Done?" : "Calibrate"}
-              </button>
-              {calibrate && <button onClick={saveCal}>Save</button>}
-              {calibrate && <button onClick={resetCal}>Reset</button>}
             </div>
           </div>
 
-          {/* Scroll / current order */}
-          <div
-            className={"box" + (calibrate ? " calOutline" : "")}
-            style={boxStyle(layout.scroll)}
-            onMouseDown={(e)=>onMouseDownBox("scroll", e)}
-          >
-            {calibrate && <div className="calTag">SCROLL</div>}
-            <div className="scrollCard" style={{pointerEvents:"none"}}>
+          {/* Current order scroll (display only) */}
+          <div className="hit-order-scroll">
+            <div className="scroll-card">
               <div className="h">Today’s order</div>
               <div className="p">{job ? job.name : "Open Orders to choose a job."}</div>
               <div className="p">Set pattern:</div>
@@ -512,15 +479,10 @@
             </div>
           </div>
 
-          {/* Type composing */}
-          <div
-            className={"box" + (calibrate ? " calOutline" : "")}
-            style={boxStyle(layout.type)}
-            onMouseDown={(e)=>onMouseDownBox("type", e)}
-          >
-            {calibrate && <div className="calTag">TYPE</div>}
-            <div className="typeCard">
-              <div className="typeHead">
+          {/* Type composing area */}
+          <div className="hit-type-area">
+            <div className="type-card">
+              <div className="type-title">
                 <div>
                   <b>Composing</b>
                   <div className="sub">{job ? job.name : "Choose an order first"}</div>
@@ -550,37 +512,27 @@
 
               <div style={{fontSize:12, color:"rgba(0,0,0,0.70)"}}>
                 When you set the type correctly, <b>one copy</b> goes onto the shelf.
-                (We can add print-run quantity next.)
+                (Next step: we’ll add print-run quantity.)
               </div>
             </div>
           </div>
 
-          {/* Shelves (4 bays) */}
-          {["shelf1","shelf2","shelf3","shelf4"].map((key, idx)=>(
-            <div
-              key={key}
-              className={"box" + (calibrate ? " calOutline" : "")}
-              style={boxStyle(layout[key])}
-              onMouseDown={(e)=>onMouseDownBox(key, e)}
-            >
-              {calibrate && <div className="calTag">SHELF {idx+1}</div>}
-              <div className="shelfBay">
+          {/* Shelves overlay — aligned to the painted shelves */}
+          <div className="hit-shelves">
+            {["Top shelf","Shelf 2","Shelf 3","Bottom shelf"].map((label, i)=>(
+              <div className="shelf-bay" key={i}>
+                <div className="shelf-label">{label}</div>
                 <div className="spines">
-                  {bays[idx].map(item=>(
-                    <div
-                      key={item.uid}
-                      className="spine"
-                      onClick={()=>trash(item.uid)}
-                      title="Click to trash"
-                    >
+                  {bays[i].map(item=>(
+                    <div key={item.uid} className="spine" onClick={()=>trash(item.uid)} title="Click to trash">
                       <div className="t">{item.name}</div>
                       <div className="x">×</div>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
           {/* Orders overlay */}
           {ordersOpen && (
@@ -602,20 +554,11 @@
               </div>
             </div>
           )}
-
-          {calibrate && (
-            <div className="hint">
-              <b>Calibration mode</b><br/>
-              Drag the cyan boxes until they sit perfectly on the painted objects.<br/>
-              Hit <b>Save</b> once. It will remember your positions on this device.
-            </div>
-          )}
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  ReactDOM.render(<App/>, document.getElementById("root"));
-</script>
+    ReactDOM.render(<App/>, document.getElementById("root"));
+  </script>
 </body>
 </html>
